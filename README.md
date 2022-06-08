@@ -1,3 +1,3 @@
-# Community Template Repo
+# lazycheck
 
-Template repo with docs and GitHub Actions etc, to create other projects.
+Lazycheck is a project made by lazy people for doing lazy tasks.
