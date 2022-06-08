@@ -1,0 +1,136 @@
+#!/bin/env bash
+#------------------------------------------------------------------------------
+# Project Name      - Extra/source/autoexec/autoexec
+# Started On        - Sat 31 Apr 22:49:41 GMT 2022
+# Last Change       - Sun 1 Apr 14:26:54 GMT 2022
+# Author E-Mail     - agrover11@gmail.com 
+# Author GitHub     - https://github.com/Agrover112
+#------------------------------------------------------------------------------
+# Features:
+#
+# lazycheck , is a utility that does linting as well can check for common sources of error by doing pattern matching and word search within files.
+# As the name suggests, it is a clear case of an progammmer spending hours to automate something which is not necessary. In no case does this project try to replac# traiditional linters .
+#
+# Bugs:
+# 
+# Nothing yet.
+#
+#TODO:
+# 	- Add a fn for Usage (command line named arguments parsing)
+#       - Lines whhere files are created and deleted
+#
+# Dependencies:
+#
+#   coreutils (>= 8.28-1)
+#   file (>= 1:5.32-2)
+#   ripgrep (>= 13.0.0)
+#   batcat  (>=0.20.0)
+#   pylint  (2.13.7)
+#   astroid (2.11.3)
+#------------------------------------------------------------------------------
+# Date : 1-4-22
+
+function tests()
+{
+	local test=0	
+	[[ ! $params -eq 0 ]] && echo "Test passed: $((++test))" || { echo "Failed at Case: $test" && exit 1; } # Check empty params
+	[ -s $1 ] && echo "Test passed: $((++test))" ||  { echo "Fail after Case: $test" && exit 1; }           # Check empty/non-existent file
+
+}
+
+function static_analyzer()
+{
+	if [[ ( $ext == "sh" || $ext == "bash" ) ]];
+	then
+		printf "%-3sPerforming shell-check......\n" ""
+		shellcheck --shell=sh $fname
+		printf "%-3sDone shell-checking.\n"
+	
+	elif [[ $ext == "py" ]];
+	then
+		printf "%-3sPylint is running ....\n" ""
+		pylint $fname
+		printf "%-3sDone linting.\n"
+	fi
+}
+
+function search_words()
+{
+	for i in $words;
+	do
+	       printf "Searching for %s ....... \n\n" "" "$i"
+	       rg --color=always  $i $fname #| batcat
+	       printf "\n\n"
+        done      
+}
+
+function search_regex()
+{
+	for i in in $words;
+	do 
+		printf "%-3s Searching for regex %s .....\n\n" "" "$i"
+		rg --color=always $i $fname
+		printf "\n"
+	done
+
+}
+
+function search_funcs()
+{
+	printf "Searching for functions ...\n\n"
+	if [[ ( $ext == "sh" || $ext == "bash" ) ]];
+	then
+		rg -o -U "func .*\n\{(\n\s.*)*(\n\})" $fname
+	elif [[ $ext == "py" ]];
+	then
+		rg -o "def .*" $fname
+	else  # Search all .py and .sh functions in the directory
+		rg -o -U "func .*" && rg -o -U "def .*"
+	fi
+	printf "\n\n"
+
+		
+}
+
+function search_imports()
+{
+	printf "Searching for imports ...\n\n"
+	if [[ ( $ext == "sh" || $ext == "bash" ) ]];
+	then
+		 rg -o "^source .*|^\. .*" run.sh  $fname
+	elif [[ $ext == "py" ]];
+	then
+		rg -o "^import .*" get-pip.py  $fname
+	else  # Search all .py and .sh functions in the directory
+		rg -o -U "func .*" && rg -o "^import .*" get-pip.py 
+	fi
+	printf "\n\n"
+
+		
+}
+function check_dependencies()
+{
+	[[ $(whereis batcat) ]] || sudo apt install bat
+	[[ $(whereis batcat) ]] || sudo apt-get install ripgrep
+	
+
+
+}
+function main()
+{
+	check_dependencies
+	# Add an argument parser to disable or enable static analysis
+	params=$#
+	tests $1 $params >test_logs
+	fname=$1
+	ext=${fname##*.}
+	words="${*:2}"
+	#static_analyzer $ext
+	search_regex $words
+	#search_words $words $fname | batcat --style='full' - 2>&1
+	search_imports  $ext $fname | batcat --style='full' - 2>&1
+	search_funcs $ext $fname | batcat --style='full' - 2>&1
+
+}
+
+main "$@"
