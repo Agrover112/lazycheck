@@ -17,7 +17,8 @@
 #
 #TODO:
 # 	- Add a fn for Usage (command line named arguments parsing)
-#       - Lines whhere files are created and deleted
+#       - Lines where files are created and deleted
+# 	- Add docstrings to summaries
 #
 # Dependencies:
 #
@@ -66,7 +67,7 @@ function search_words()
 
 function search_regex()
 {
-	for i in in $words;
+	for i in $words;
 	do 
 		printf "%-3s Searching for regex %s .....\n\n" "" "$i"
 		rg --color=always $i $fname
@@ -97,12 +98,10 @@ function search_imports()
 	printf "Searching for imports ...\n\n"
 	if [[ ( $ext == "sh" || $ext == "bash" ) ]];
 	then
-		 rg -o "^source .*|^\. .*" run.sh  $fname
+		 rg -o "^source .*|^\. .*" $fname
 	elif [[ $ext == "py" ]];
 	then
-		rg -o "^import .*" get-pip.py  $fname
-	else  # Search all .py and .sh functions in the directory
-		rg -o -U "func .*" && rg -o "^import .*" get-pip.py 
+		rg -o "^import .*" $fname && rg -o "^from .*" $fname
 	fi
 	printf "\n\n"
 
@@ -118,7 +117,7 @@ function check_dependencies()
 }
 function main()
 {
-	check_dependencies
+	# check_dependencies
 	# Add an argument parser to disable or enable static analysis
 	params=$#
 	tests $1 $params >test_logs
@@ -128,8 +127,8 @@ function main()
 	#static_analyzer $ext
 	search_regex $words
 	#search_words $words $fname | batcat --style='full' - 2>&1
-	search_imports  $ext $fname | batcat --style='full' - 2>&1
-	search_funcs $ext $fname | batcat --style='full' - 2>&1
+	search_imports  $ext $fname | cat 
+	search_funcs $ext $fname | cat 
 
 }
 
